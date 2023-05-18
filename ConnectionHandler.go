@@ -2,13 +2,10 @@
 
 package phomeCore
 
-// We will be using chacha20-poly1305 and  key exchange is out of band.
-
 import (
-	"crypto/chacha20poly1305"
+	"github.com/quic-go/quic-go/http3"
 	"encoding/base64"
 	"net"
-	"time"
 	"log"
 	)
 
@@ -25,4 +22,14 @@ func DecodeB64(in string) (string, error) {
 	}
 }
 
+func BeginHTTP3Listener() {
+	err := http3.ListenAndServe() 
+	if err != nil {
+		log.Fatal("Failed to start HTTP3 server!")
+	}
+}
+
+func DialHttp3() {
+	//stub
+}
 
