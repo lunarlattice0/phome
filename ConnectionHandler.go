@@ -5,7 +5,6 @@ package phomeCore
 import (
 	"github.com/quic-go/quic-go/http3"
 	"encoding/base64"
-	"net"
 	"log"
 	)
 
