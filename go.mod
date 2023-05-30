@@ -1,4 +1,4 @@
-module github.com/Thelolguy1/phomeCore
+module github.com/Thelolguy1/phome
 
 go 1.20
 

@@ -28,8 +28,6 @@ func BeginHTTP3Listener() {
 	}
 }
 
-func GenerateKP
-
 func DialHttp3() {
 	//stub
 }
