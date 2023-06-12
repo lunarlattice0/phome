@@ -51,7 +51,7 @@ func HostWS() {
 	}
 
 	http.Handle("/ws", websocket.Handler(es))
-	err := http.ListenAndServe(":5600", nil)
+	err := http.ListenAndServe(":56000", nil)
 	if err != nil {
 		panic("HTTPServer says:" + err.Error())
 	}
