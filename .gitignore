@@ -22,3 +22,6 @@ go.work
 
 # Vim swapfiles
 *.swp
+
+# ignore exectuable
+/phome
