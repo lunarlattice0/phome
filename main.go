@@ -1,9 +1,12 @@
+//This is a reference CLI wrapper for phomeCore
+
 package main
 
 import (
-	pc "github.com/Thelolguy1/phome/phomeCore"
+	//pc "github.com/Thelolguy1/phome/phomeCore"
+	"log"
 )
 
 func main() {
-	pc.HostWS()
+	log.Println("PhomeCore started")
 }

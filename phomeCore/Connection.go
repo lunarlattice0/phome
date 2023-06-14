@@ -1,12 +1,12 @@
 // This file contains functions responsible for establishing and maintaining network connections.
+// We will use http3 with a cert generated in encryption.go
 
 package phomeCore
 
 import (
-	"net/http"
+	//"net/http"
 	"encoding/base64"
-	"golang.org/x/net/websocket"
-	"log"
+	//"log"
 	)
 
 func EncodeB64(in string) string { // Output can be used in a external program, like a QR generator.
@@ -19,40 +19,5 @@ func DecodeB64(in string) (string, error) {
 		return "", err
 	} else {
 		return string(data), nil
-	}
-}
-
-func ClientWS(hostIP string){
-	origin := "http://localhost"
-	url := "ws://" + hostIP + ":56000/ws"
-	ws, err := websocket.Dial(url, "", origin)
-	if err != nil {
-		log.Println("Failed to connect to host")
-	} else {
-		log.Println("Connected to " + hostIP)
-	}
-
-	if _, err := ws.Write([]byte("hello, world!\n")); err != nil {
-		log.Println("Failed to message " + hostIP)
-	}
-
-	var retmsg = make([]byte, 512)
-	var n int
-
-	if n, err = ws.Read(retmsg); err != nil {
-		log.Println("Couldn't read returned message")
-	}
-	log.Println(retmsg[:n])
-}
-
-func HostWS() {
-	es := func(ws *websocket.Conn){ //stub
-		log.Println(ws)
-	}
-
-	http.Handle("/ws", websocket.Handler(es))
-	err := http.ListenAndServe(":56000", nil)
-	if err != nil {
-		panic("HTTPServer says:" + err.Error())
 	}
 }
