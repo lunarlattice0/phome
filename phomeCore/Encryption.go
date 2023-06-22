@@ -12,16 +12,19 @@ import (
 	"math/big"
 	"os"
 	"encoding/pem"
+	"path/filepath"
 )
 
-func GenCerts(CertPemFile string, KeyFile string) {
-	if CertPemFile == "" {
-		CertPemFile = "cert.pem"
+func GenCerts(targetDir string) {
+	err := os.MkdirAll(targetDir, os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	if KeyFile == "" {
-		KeyFile = "key.pem"
-	}
+
+
+	var CertPemFile = filepath.Join(targetDir, "cert.pem")
+	var KeyFile = filepath.Join(targetDir, "key.pem")
 
 	//Modified from https://go.dev/src/crypto/tls/generate_cert.go
 	//Please see SUBLICENSE for licensing of the bottom code.

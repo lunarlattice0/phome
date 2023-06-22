@@ -4,9 +4,10 @@
 package phomeCore
 
 import (
-	//"net/http"
+	"github.com/quic-go/quic-go/http3"
 	"encoding/base64"
-	//"log"
+	"log"
+	"net/http"
 	)
 
 func EncodeB64(in string) string { // Output can be used in a external program, like a QR generator.
@@ -20,4 +21,12 @@ func DecodeB64(in string) (string, error) {
 	} else {
 		return string(data), nil
 	}
+}
+
+func beginHTTP3(certFile string, keyFile string, handler http.Handler) {
+	go func() {
+		if err := http3.ListenAndServe("localhost:64000", certFile, keyFile, handler); err != nil {
+			log.Fatal(err)
+		}
+	} ()
 }
