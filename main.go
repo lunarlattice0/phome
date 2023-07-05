@@ -16,8 +16,13 @@ func main() {
 	_, err := os.Stat(filepath.Join(dirs.Certificates, "cert.pem"))
 	_, err2 := os.Stat(filepath.Join(dirs.Certificates, "key.pem"))
 
-	if (err != nil && err2 != nil) {
+	if (err != nil || err2 != nil) {
 		log.Println("Generating HTTP certificates for the first time...")
 		pc.GenCerts(dirs.Certificates)
 	}
+
+	cert := filepath.Join(dirs.Certificates, "cert.pem")
+	key := filepath.Join(dirs.Certificates, "key.pem")
+
+	pc.BeginHTTP3(cert, key)
 }

@@ -23,10 +23,12 @@ func DecodeB64(in string) (string, error) {
 	}
 }
 
-func beginHTTP3(certFile string, keyFile string, handler http.Handler) {
-	go func() {
-		if err := http3.ListenAndServe("localhost:64000", certFile, keyFile, handler); err != nil {
-			log.Fatal(err)
-		}
-	} ()
+func BeginHTTP3(certFile string, keyFile string) {
+	mux := http.NewServeMux()
+	if err := http3.ListenAndServe("localhost:64000", certFile, keyFile, mux); err != nil {
+		log.Fatal(err)
+	}
+	//go func() {
+	//
+	//} ()
 }

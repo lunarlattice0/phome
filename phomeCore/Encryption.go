@@ -21,8 +21,6 @@ func GenCerts(targetDir string) {
 		log.Fatal(err)
 	}
 
-
-
 	var CertPemFile = filepath.Join(targetDir, "cert.pem")
 	var KeyFile = filepath.Join(targetDir, "key.pem")
 
@@ -35,7 +33,8 @@ func GenCerts(targetDir string) {
 
 	keyUsage := x509.KeyUsageDigitalSignature
 	notBefore := time.Now()
-	notAfter := notBefore.Add(99999)
+	notAfter := notBefore.Add(63072000)
+	//2 year expiry
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
@@ -95,4 +94,7 @@ func GenCerts(targetDir string) {
 	}
 
 	log.Print("Wrote key.pem\n")
+
+	//Note: Neither Firefox nor Chrome(ium) support ED25519, so phomeCore is not web-browser accessible.
+	//This should be fine, as we do not plan for browsers to be able to manually send in location reports.
 }
