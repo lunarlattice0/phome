@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"log"
 	"net/http"
+	"strconv"
 	)
 
 func EncodeB64(in string) string { // Output can be used in a external program, like a QR generator.
@@ -23,12 +24,18 @@ func DecodeB64(in string) (string, error) {
 	}
 }
 
-func BeginHTTP3(certFile string, keyFile string) {
+func acceptUpload(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received position update request, validating...")
+
+}
+
+func BeginHTTP3(certFile string, keyFile string, portNumber int) {
 	mux := http.NewServeMux()
-	if err := http3.ListenAndServe("localhost:64000", certFile, keyFile, mux); err != nil {
+	mux.Handle("/upload", http.HandlerFunc(acceptUpload))
+
+	hostAdr := "localhost:" + strconv.Itoa(portNumber)
+
+	if err := http3.ListenAndServe(hostAdr, certFile, keyFile, mux); err != nil {
 		log.Fatal(err)
 	}
-	//go func() {
-	//
-	//} ()
 }
