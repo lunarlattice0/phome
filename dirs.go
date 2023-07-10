@@ -7,9 +7,13 @@ import (
 )
 
 type Directories struct {
+	// Storage for HTTP3 TLS keys and own UUID.
 	Certificates string
+
+	// Per-UUID storage of peer keys.
 	PairedDevices string
-	//don't create the XDG dirs below!
+
+	//XDG dirs
 	Cache     string
 	Config    string
 	Data      string

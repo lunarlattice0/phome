@@ -15,18 +15,22 @@ func EncodeB64(in string) string { // Output can be used in a external program, 
 	return base64.URLEncoding.EncodeToString([]byte (in))
 }
 
-func DecodeB64(in string) (string, error) {
+func DecodeB64(in string) string {
 	data, err := base64.URLEncoding.DecodeString(in)
 	if (err != nil) {
-		return "", err
-	} else {
-		return string(data), nil
+		log.Fatal(err)
 	}
+	return string(data)
 }
 
 func acceptUpload(w http.ResponseWriter, r *http.Request) {
-	log.Println("Received position update request, validating...")
-
+	switch r.Method {
+		case http.MethodPost:
+			log.Println("Received position update request, validating...")
+			//TODO: handle request
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 func BeginHTTP3(certFile string, keyFile string, portNumber int) {

@@ -7,6 +7,8 @@ require (
 	golang.org/x/net v0.10.0 // indirect
 )
 
+require github.com/google/uuid v1.3.0
+
 require (
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/golang/mock v1.6.0 // indirect
