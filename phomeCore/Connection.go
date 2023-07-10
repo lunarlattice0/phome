@@ -4,38 +4,41 @@
 package phomeCore
 
 import (
-	"github.com/quic-go/quic-go/http3"
 	"encoding/base64"
+	"github.com/quic-go/quic-go/http3"
 	"log"
 	"net/http"
 	"strconv"
-	)
+)
 
 func EncodeB64(in string) string { // Output can be used in a external program, like a QR generator.
-	return base64.URLEncoding.EncodeToString([]byte (in))
+	return base64.URLEncoding.EncodeToString([]byte(in))
 }
 
 func DecodeB64(in string) string {
 	data, err := base64.URLEncoding.DecodeString(in)
-	if (err != nil) {
+	if err != nil {
 		log.Fatal(err)
 	}
 	return string(data)
 }
 
-func acceptUpload(w http.ResponseWriter, r *http.Request) {
+func handshake(w http.ResponseWriter, r *http.Request) {
+	//TODO: Verify peer identity on client and server (2 way)
 	switch r.Method {
-		case http.MethodPost:
-			log.Println("Received position update request, validating...")
-			//TODO: handle request
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	case http.MethodPost:
+		log.Println("Received position update request, validating...")
+		//TODO: handle request
+	case http.MethodGet:
+		log.Println("Received request to verify UUID")
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
 func BeginHTTP3(certFile string, keyFile string, portNumber int) {
 	mux := http.NewServeMux()
-	mux.Handle("/upload", http.HandlerFunc(acceptUpload))
+	mux.Handle("/handshake", http.HandlerFunc(handshake))
 
 	hostAdr := "localhost:" + strconv.Itoa(portNumber)
 

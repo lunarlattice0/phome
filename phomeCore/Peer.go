@@ -2,18 +2,17 @@
 package phomeCore
 
 import (
-	"github.com/google/uuid"
 	"encoding/json"
+	"github.com/google/uuid"
 	"log"
 )
 
 type PairingJSON struct { // Do we want to add a common name?
-	UUID	string
-	PubKey	string
+	UUID   string
+	PubKey string
 }
 
 // Note: GenCerts also generates the localhost UUID.
-// TODO: UUID collision?
 func GenerateUUID() string {
 	id := uuid.New()
 	return id.String()
@@ -31,7 +30,7 @@ func GeneratePairingJSON(newPairingJSON *PairingJSON) string {
 }
 
 // This function unmarshals a peer's pairing JSON and returns a pairing JSON struct.
-func DecodePairingJson(pairingJSONstr string) (*PairingJSON) {
+func DecodePairingJson(pairingJSONstr string) *PairingJSON {
 	newPeerPairing := PairingJSON{}
 	err := json.Unmarshal([]byte(pairingJSONstr), &newPeerPairing)
 	if err != nil {

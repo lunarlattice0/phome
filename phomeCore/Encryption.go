@@ -3,20 +3,20 @@
 package phomeCore
 
 import (
-	"crypto/rand"
 	"crypto/ed25519"
+	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"log"
 	//"time"
 	// We don't care about expiry/creation dates since certs are self-signed and verified out-of-band.
+	"encoding/pem"
 	"math/big"
 	"os"
-	"encoding/pem"
 	"path/filepath"
 )
 
-//GenCerts generates certificates for server TLS and client verification.
+// GenCerts generates certificates for server TLS and client verification.
 func GenCerts(targetDir string) {
 	err := os.MkdirAll(targetDir, os.ModePerm)
 	if err != nil {
@@ -49,12 +49,12 @@ func GenCerts(targetDir string) {
 		Subject: pkix.Name{
 			Organization: []string{"phomeCoreCert"},
 		},
-	//	NotBefore: notBefore,
-	//	NotAfter:  notAfter,
-		KeyUsage:              	keyUsage,
-		ExtKeyUsage:           	[]x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: 	true,
-		IsCA:			true,
+		//	NotBefore: notBefore,
+		//	NotAfter:  notAfter,
+		KeyUsage:              keyUsage,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IsCA:                  true,
 	}
 	template.KeyUsage |= x509.KeyUsageCertSign
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, priv.Public().(ed25519.PublicKey), priv)

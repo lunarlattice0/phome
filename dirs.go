@@ -1,8 +1,8 @@
 package main
 
 import (
-	"os"
 	"log"
+	"os"
 	"path/filepath"
 )
 
@@ -14,9 +14,9 @@ type Directories struct {
 	PairedDevices string
 
 	//XDG dirs
-	Cache     string
-	Config    string
-	Data      string
+	Cache  string
+	Config string
+	Data   string
 }
 
 func GetDirectories() Directories {
