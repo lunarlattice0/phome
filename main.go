@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"io/fs"
 )
 
 func usage() {
@@ -34,8 +35,34 @@ func ensureCertsExist(dirs *Directories) {
 	}
 }
 
+// Loads known Peer UUIDs and certs into a map for the server for fast access.
+func loadPeerUUIDCerts (dirs *Directories) (map[string]string) {
+	peerMap := make(map[string]string)
+	err := filepath.Walk(dirs.PairedDevices, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if info.IsDir() == true && info.Name() != "PairedDevices" {
+			peerUUIDFileData, err := os.ReadFile(filepath.Join(path, "cert.pem"))
+			if err != nil {
+				log.Fatal(err)
+			}
+			peerMap[info.Name()] = string(peerUUIDFileData)
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	return peerMap
+}
+
 func beginListener(dirs *Directories, port int) {
 	ensureCertsExist(dirs)
+
+
 
 	cert := filepath.Join(dirs.Certificates, "cert.pem")
 	key := filepath.Join(dirs.Certificates, "key.pem")

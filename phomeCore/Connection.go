@@ -1,5 +1,12 @@
 // This file contains functions responsible for establishing and maintaining network connections.
 // We will use http3 with a cert generated in encryption.go
+/*
+client requests uuid from server
+client verifies TLS cert of HTTP with uuid/tls pairing
+client sends signed base64 json data package of uuid + data
+server verifies data package with pem
+server responds with 200 OK with empty body or 200OK with signed packet in body.
+*/
 
 package phomeCore
 
