@@ -21,17 +21,27 @@ func usage() {
 }
 
 func ensureCertsExist(dirs *Directories) {
+	err := os.MkdirAll(dirs.Certificates, os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// TODO: Pack this shit into a struct.
+	selfIDs := new(pc.SelfIDs)
+	selfIDs.UuidPath = filepath.Join(dirs.Certificates, "uuid")
+	selfIDs.CertPath = filepath.Join(dirs.Certificates, "cert.pem")
+	selfIDs.KeyPath = filepath.Join(dirs.Certificates, "key.pem")
+
 	// We will use cert.pem as our pairing pubkey and for TLS
 	// This will be shared out-of-band in b64 form for pairing to ensure authenticity.
-	_, err := os.Stat(filepath.Join(dirs.Certificates, "cert.pem"))
+	_, err = os.Stat(selfIDs.CertPath)
 
 	// Private key
-	_, err2 := os.Stat(filepath.Join(dirs.Certificates, "key.pem"))
+	_, err2 := os.Stat(selfIDs.KeyPath)
 
 	// Own UUID
-	_, err3 := os.Stat(filepath.Join(dirs.Certificates, "uuid"))
+	_, err3 := os.Stat(selfIDs.UuidPath)
 	if err != nil || err2 != nil || err3 != nil {
-		pc.GenCerts(dirs.Certificates)
+		selfIDs.GenCerts()
 	}
 }
 
@@ -61,8 +71,6 @@ func loadPeerUUIDCerts (dirs *Directories) (map[string]string) {
 
 func beginListener(dirs *Directories, port int) {
 	ensureCertsExist(dirs)
-
-
 
 	cert := filepath.Join(dirs.Certificates, "cert.pem")
 	key := filepath.Join(dirs.Certificates, "key.pem")
@@ -97,10 +105,10 @@ func main() {
 			log.Fatal(err)
 		}
 
-		newPairingJSON := pc.PairingJSON{PubKey: string(pubKeyData), UUID: string(uuidFileData)}
+		newPairingJSON := pc.JSONBundle{PubKey: string(pubKeyData), UUID: string(uuidFileData)}
 
-		pairingJSON := pc.GeneratePairingJSON(&newPairingJSON)
-		pairingJSONB64 := pc.EncodeB64(pairingJSON)
+
+		pairingJSONB64 := pc.EncodeB64(newPairingJSON.GeneratePairingJSON())
 		fmt.Println(pairingJSONB64)
 	case "newpair":
 		if len(os.Args) < 3 {
@@ -116,7 +124,8 @@ func main() {
 		}
 
 		peerPairingStr := pc.DecodeB64(os.Args[2])
-		newPeerPairing := pc.DecodePairingJson(peerPairingStr)
+		newPeerPairing := new(pc.JSONBundle)
+		newPeerPairing.DecodePairingJSON(peerPairingStr)
 
 		//We don't care about matching certs because the probability is so low.
 		if newPeerPairing.UUID == string(uuidFileData) {

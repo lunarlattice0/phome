@@ -1,5 +1,5 @@
 // This file handles encryption and decryption of TLS and JWT
-
+//TODO: PUT UUID AS SERVERNAME OF CERT!!!
 package phomeCore
 
 import (
@@ -13,19 +13,40 @@ import (
 	"encoding/pem"
 	"math/big"
 	"os"
-	"path/filepath"
+	//"path/filepath"
 )
 
+
+// Remember to check that these paths are valid in your implementation!
+type SelfIDs struct {
+	UuidPath string
+	CertPath string
+	KeyPath  string
+}
+
 // GenCerts generates certificates for server TLS and client verification.
-func GenCerts(targetDir string) {
+func (ids *SelfIDs) GenCerts() {
+
+	/* JUL 18, 23: This is now the responsibility of the native implementation to create this folder.
 	err := os.MkdirAll(targetDir, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
+	*/
 
-	var uuidFile = filepath.Join(targetDir, "uuid")
-	var certPemFile = filepath.Join(targetDir, "cert.pem")
-	var keyFile = filepath.Join(targetDir, "key.pem")
+	uuidFile := ids.UuidPath
+	certPemFile := ids.CertPath
+	keyFile := ids.KeyPath
+	//var uuidFile = filepath.Join(targetDir, "uuid")
+	//var certPemFile = filepath.Join(targetDir, "cert.pem")
+	//var keyFile = filepath.Join(targetDir, "key.pem")
+
+	uuidStr := GenerateUUID()
+	uuidBytes := []byte(uuidStr)
+
+	if err := os.WriteFile(uuidFile, uuidBytes, 0600); err != nil {
+		log.Fatalf("Failed to open uuid file for writing: %v", err)
+	}
 
 	//Modified from https://go.dev/src/crypto/tls/generate_cert.go
 	//Please see SUBLICENSE for licensing of the bottom code.
@@ -55,6 +76,7 @@ func GenCerts(targetDir string) {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 		IsCA:                  true,
+		DNSNames:              []string{uuidStr},
 	}
 	template.KeyUsage |= x509.KeyUsageCertSign
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, priv.Public().(ed25519.PublicKey), priv)
@@ -99,11 +121,4 @@ func GenCerts(targetDir string) {
 
 	//Note: Neither Firefox nor Chrome(ium) support ED25519, so phomeCore is not web-browser accessible.
 	//This should be fine, as we do not plan for browsers to be able to manually send in location reports.
-
-	uuidBytes := []byte(GenerateUUID())
-
-	if err := os.WriteFile(uuidFile, uuidBytes, 0600); err != nil {
-		log.Fatalf("Failed to open uuid file for writing: %v", err)
-	}
-	//log.Println("Wrote UUID")
 }
