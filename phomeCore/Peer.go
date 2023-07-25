@@ -13,6 +13,10 @@ type BundleType int64
 const (
 	LocationReport BundleType = iota
 	InitialPairing
+	TextMessage
+	FileTransfer
+	LockDevice
+	UnlockDevice
 )
 
 type JSONBundle struct { // JSON Bundles are used for pairing and general purpose.

@@ -1,5 +1,5 @@
 //This is a reference CLI wrapper for phomeCore
-
+//TODO: Redirect refs to *Diretories to selfIDs
 package main
 
 import (
@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"io/fs"
 )
+
+var selfIDs = pc.SelfIDs{}
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage: phome [client | server | showpair | newpair | regenerate]")
@@ -25,8 +27,7 @@ func ensureCertsExist(dirs *Directories) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// TODO: Pack this shit into a struct.
-	selfIDs := new(pc.SelfIDs)
+
 	selfIDs.UuidPath = filepath.Join(dirs.Certificates, "uuid")
 	selfIDs.CertPath = filepath.Join(dirs.Certificates, "cert.pem")
 	selfIDs.KeyPath = filepath.Join(dirs.Certificates, "key.pem")
