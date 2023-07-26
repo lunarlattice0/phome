@@ -1,5 +1,4 @@
 //This is a reference CLI wrapper for phomeCore
-//TODO: Redirect refs to *Diretories to selfIDs
 package main
 
 import (
@@ -73,8 +72,8 @@ func loadPeerUUIDCerts (dirs *Directories) (map[string]string) {
 func beginListener(dirs *Directories, port int) {
 	ensureCertsExist(dirs)
 
-	cert := filepath.Join(dirs.Certificates, "cert.pem")
-	key := filepath.Join(dirs.Certificates, "key.pem")
+	cert := selfIDs.CertPath
+	key := selfIDs.KeyPath
 
 	pc.BeginHTTP3(cert, key, port)
 }
@@ -94,13 +93,13 @@ func main() {
 	case "showpair":
 		ensureCertsExist(&dirs)
 
-		pubkeyFile := filepath.Join(dirs.Certificates, "cert.pem")
+		pubkeyFile := selfIDs.KeyPath
 		pubKeyData, err := os.ReadFile(pubkeyFile)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		uuidFile := filepath.Join(dirs.Certificates, "uuid")
+		uuidFile := selfIDs.UuidPath
 		uuidFileData, err := os.ReadFile(uuidFile)
 		if err != nil {
 			log.Fatal(err)
@@ -118,7 +117,7 @@ func main() {
 
 		ensureCertsExist(&dirs)
 
-		uuidFile := filepath.Join(dirs.Certificates, "uuid")
+		uuidFile := selfIDs.UuidPath
 		uuidFileData, err := os.ReadFile(uuidFile)
 		if err != nil {
 			log.Fatal(err)
