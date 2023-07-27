@@ -1,0 +1,2 @@
+# PhomeCore
+PhomeCore is a peer-to-peer and host-client capable network protocol that can be positioned on the presentation layer of the OSI model. It is built upon proven existing technologies, including HTTP/3 and ed25519, and is structured to be block-based. It enforces message validation and encryption with TLS, and simplifies the chain-of-trust problem by exchanging certificates out-of-band. While the reference client utilizes PhomeCore to transmit the locations of devices, PhomeCore can be integrated into various software solutions, such as chat applications.
