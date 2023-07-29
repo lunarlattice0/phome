@@ -110,6 +110,13 @@ func main() {
 
 		pairingJSONB64 := pc.EncodeB64(newPairingJSON.GeneratePairingJSON())
 		fmt.Println(pairingJSONB64)
+	/*
+	//TEST USAGE ONLY
+	case "testSign":
+		ensureCertsExist(&dirs)
+		log.Println(selfIDs.SignString("hi"))
+	//
+	*/
 	case "newpair":
 		if len(os.Args) < 3 {
 			usage()

@@ -13,16 +13,13 @@ type BundleType int64
 const (
 	LocationReport BundleType = iota
 	InitialPairing
-	TextMessage
-	FileTransfer
-	LockDevice
-	UnlockDevice
-)
+) // This may be extended for personal use.
 
 type JSONBundle struct { // JSON Bundles are used for pairing and general purpose.
 	UUID   string
 	PubKey string
 	BundleType BundleType // Don't rely on this, since bundles may be mislabeled.
+	Data   any // This is empty during initial pairing.
 }
 
 // This function generates the initial pairing JSON from a JSONBundle.

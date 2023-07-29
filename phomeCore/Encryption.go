@@ -117,8 +117,6 @@ func (ids *SelfIDs) GenCerts() {
 		log.Fatalf("Error closing key.pem: %v", err)
 	}
 
-	//log.Print("Wrote key.pem\n")
-
 	//Note: Neither Firefox nor Chrome(ium) support ED25519, so phomeCore is not web-browser accessible.
 	//This should be fine, as we do not plan for browsers to be able to manually send in location reports.
 }

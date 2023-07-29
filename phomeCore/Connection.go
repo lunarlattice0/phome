@@ -2,8 +2,8 @@
 // We will use http3 with a cert generated in encryption.go
 /*
 client verifies with tls.config
-client sends SIGNED package
-server responds with 200OK with signed response in body.
+client sends package
+server responds with 200OK and response in body.
 */
 
 package phomeCore
@@ -17,6 +17,8 @@ import (
 
 func handshake(w http.ResponseWriter, r *http.Request) {
 	//TODO: Verify peer identity on client and server (2 way)
+	// requireanyclientcert
+	// verifyconnection
 	switch r.Method {
 	case http.MethodPost:
 		log.Println("Received position update request, validating...")
