@@ -12,7 +12,7 @@ import (
 	"github.com/quic-go/quic-go/http3"
 	"log"
 	"net/http"
-	"strconv"
+	"crypto/tls"
 )
 
 func handshake(w http.ResponseWriter, r *http.Request) {
@@ -34,9 +34,29 @@ func BeginHTTP3(certFile string, keyFile string, portNumber int) {
 	mux := http.NewServeMux()
 	mux.Handle("/handshake", http.HandlerFunc(handshake))
 
-	hostAdr := "localhost:" + strconv.Itoa(portNumber)
-
-	if err := http3.ListenAndServe(hostAdr, certFile, keyFile, mux); err != nil {
+	var err error
+	certs := make([]tls.Certificate, 1)
+	certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
 		log.Fatal(err)
 	}
+
+	tlsConfig := &tls.Config{
+		Certificates: certs,
+		ClientAuth: tls.RequireAnyClientCert,
+		InsecureSkipVerify: true,
+	} // TODO: Actually verify the peer cert on the server...
+
+	tlsConfig = http3.ConfigureTLSConfig(tlsConfig)
+
+	server := http3.Server {
+		TLSConfig: tlsConfig,
+		Port: portNumber,
+		Handler: mux,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
+
 }
