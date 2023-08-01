@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"io/fs"
 )
 
@@ -15,7 +14,7 @@ var selfIDs = pc.SelfIDs{}
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage: phome [client | server | showpair | newpair | regenerate]")
-	fmt.Fprintln(os.Stderr, "       phome [server] [port number]")
+	fmt.Fprintln(os.Stderr, "       phome [server] [IP:port]")
 	fmt.Fprintln(os.Stderr, "       phome [newpair] [pairing code of other device]")
 	fmt.Fprintln(os.Stderr, "hint: you can run the client and server in as separate processes simultaneously")
 	os.Exit(1)
@@ -69,13 +68,13 @@ func loadPeerUUIDCerts (dirs *Directories) (map[string]string) {
 	return peerMap
 }
 
-func beginListener(dirs *Directories, port int) {
+func beginListener(dirs *Directories, address string) {
 	ensureCertsExist(dirs)
 
 	cert := selfIDs.CertPath
 	key := selfIDs.KeyPath
 
-	pc.BeginHTTP3(cert, key, port)
+	pc.BeginHTTP(cert, key, address)
 }
 
 func main() {
@@ -171,13 +170,10 @@ func main() {
 		if len(os.Args) < 3 {
 			usage()
 		}
-		pN, err := strconv.Atoi(os.Args[2])
-		if err != nil {
-			log.Fatal(err) // deferring the error to strconv, so that I don't have to use reflect package
-		}
+		address := string(os.Args[2])
 
-		log.Println("Starting HTTP3 listener on port " + os.Args[2])
-		beginListener(&dirs, pN)
+		log.Println("Starting HTTP listener on port " + address)
+		beginListener(&dirs, address)
 	default:
 		usage()
 	}

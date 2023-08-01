@@ -1,5 +1,4 @@
 // This file contains functions responsible for establishing and maintaining network connections.
-// We will use http3 with a cert generated in encryption.go
 /*
 client verifies with tls.config
 client sends package
@@ -13,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"crypto/tls"
+	"crypto/x509"
 )
 
 func handshake(w http.ResponseWriter, r *http.Request) {
@@ -22,15 +22,21 @@ func handshake(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		log.Println("Received position update request, validating...")
-		//TODO: handle request
-	case http.MethodGet:
-		log.Println("Received request to verify UUID")
 	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		log.Println("Dropped invalid request")
+		//Silent Drop
+		http.Error(w, "", http.StatusBadRequest)
 	}
 }
 
-func BeginHTTP3(certFile string, keyFile string, portNumber int) {
+func verifyPeer(rawCerts [][]byte, _ [][]*x509.Certificate) (error) {
+	// We have no chain of trust, so we cannot establish verified chains.
+	currentCert := rawCerts[0]
+	log.Println(currentCert)
+	return nil
+}
+
+func BeginHTTP(certFile string, keyFile string, address string) {
 	mux := http.NewServeMux()
 	mux.Handle("/handshake", http.HandlerFunc(handshake))
 
@@ -43,19 +49,18 @@ func BeginHTTP3(certFile string, keyFile string, portNumber int) {
 
 	tlsConfig := &tls.Config{
 		Certificates: certs,
-		ClientAuth: tls.RequireAnyClientCert,
+		ClientAuth: tls.RequireAndVerifyClientCert, // changeme
 		InsecureSkipVerify: true,
-	} // TODO: Actually verify the peer cert on the server...
-
-	tlsConfig = http3.ConfigureTLSConfig(tlsConfig)
+		//VerifyPeerCertificate: verifyPeer,
+	}
 
 	server := http3.Server {
 		TLSConfig: tlsConfig,
-		Port: portNumber,
+		Addr: address,
 		Handler: mux,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
+	if err := server.ListenAndServe(); err != nil { // no listener???
 		log.Fatal(err)
 	}
 
