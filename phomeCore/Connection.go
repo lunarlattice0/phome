@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"crypto/tls"
 	"crypto/x509"
+	"net"
 )
 
 func handshake(w http.ResponseWriter, r *http.Request) {
@@ -36,10 +37,11 @@ func verifyPeer(rawCerts [][]byte, _ [][]*x509.Certificate) (error) {
 	return nil
 }
 
-func BeginHTTP(certFile string, keyFile string, address string) {
+func BeginHTTP(certFile string, keyFile string, addr string) {
 	mux := http.NewServeMux()
 	mux.Handle("/handshake", http.HandlerFunc(handshake))
 
+	// Adapted from quic-go ListenAndServe (??? implementation)
 	var err error
 	certs := make([]tls.Certificate, 1)
 	certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
@@ -54,14 +56,57 @@ func BeginHTTP(certFile string, keyFile string, address string) {
 		//VerifyPeerCertificate: verifyPeer,
 	}
 
-	server := http3.Server {
+	quicServer := &http3.Server{
 		TLSConfig: tlsConfig,
-		Addr: address,
 		Handler: mux,
 	}
 
-	if err := server.ListenAndServe(); err != nil { // no listener???
-		log.Fatal(err)
+	httpServer := &http.Server {
+		//TLSConfig: tlsConfig,
+		//Addr: address,
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			quicServer.SetQuicHeaders(w.Header())
+			mux.ServeHTTP(w, r)
+		}),
 	}
 
+	udpAddr, err := net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	udpConn, err := net.ListenUDP("udp", udpAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer udpConn.Close()
+
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tcpConn, err := net.ListenTCP("tcp", tcpAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer tcpConn.Close()
+
+	tlsConn := tls.NewListener(tcpConn, tlsConfig)
+	defer tlsConn.Close()
+
+	hErr := make(chan error)
+	qErr := make(chan error)
+	go func() {
+		hErr <- httpServer.Serve(tlsConn)
+	}()
+	go func() {
+		qErr <- quicServer.Serve(udpConn)
+	}()
+
+	select {
+	case err := <-hErr:
+		quicServer.Close()
+		log.Fatal(err)
+	case err := <-qErr:
+		log.Fatal(err)
+	}
 }
