@@ -13,6 +13,9 @@ import (
 	"net/http"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
+	"encoding/pem"
+	"bytes"
 )
 
 func handshake(w http.ResponseWriter, r *http.Request) {
@@ -29,14 +32,83 @@ func handshake(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func verifyPeer(rawCerts [][]byte, _ [][]*x509.Certificate) (error) {
-	// We have no chain of trust, so we cannot establish verified chains.
-	currentCert := rawCerts[0]
-	log.Println(currentCert)
+// Compare the certificate received from the server with the saved certificate of this UUID.
+// An MITM should not be possible since the server must be hosted with the same cert that signed the JSON.
+func PCVerifyConnection (rawCerts [][]byte, knownCerts map[string]string) (error) {
+	pubKeyBlock := &pem.Block {
+		Type: "CERTIFICATE",
+		Bytes: rawCerts[0],
+	}
+	pubKeyPEM := string(pem.EncodeToMemory(pubKeyBlock))
+	block, _ := pem.Decode([]byte(pubKeyPEM))
+
+	if block == nil {
+		return errors.New("The received certificate did not contain a public key.")
+	}
+
+
+	peerCert, err := x509.ParseCertificate([]byte(block.Bytes))
+	if err != nil {
+		return errors.New("The received certificate is not a valid X.509 certificate.")
+	}
+
+	peerUuid := peerCert.DNSNames[0]
+	cachedPeerPEM := knownCerts[peerUuid]
+
+	// No idea if this is the most efficient way, but this is likely safe.
+
+	if len(cachedPeerPEM) == len(pubKeyPEM) {
+		for i := range cachedPeerPEM {
+			if cachedPeerPEM[i] != pubKeyPEM[i] {
+				return errors.New("The received and stored certificates do not match.")
+			}
+		}
+	} else {
+		errors.New("The received and stored certificates are of different lengths and do not match.")
+	}
 	return nil
 }
 
-func BeginHTTP(certFile string, keyFile string, addr string) {
+func BeginClientPeer(certFile string, keyFile string, addr string, knownUuids map[string]string) {
+	//generate client TLS config
+	var err error
+	certs := make([]tls.Certificate, 1)
+	certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tlsConfig := &tls.Config{
+		Certificates: certs,
+		ClientAuth: tls.RequireAnyClientCert,
+		InsecureSkipVerify: true,
+		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) (error) {
+			return PCVerifyConnection(rawCerts, knownUuids)
+		},
+	}
+
+	//generate http3 roundtripper config
+	roundTripper := &http3.RoundTripper{
+		TLSClientConfig: tlsConfig,
+	}
+
+	client := &http.Client{
+		Transport: roundTripper,
+	}
+	// TEST
+	testJSONStruct := JSONBundle{
+		Test: "SNEEDFEEDSEED",
+	}
+
+	bodyReader := bytes.NewReader([]byte(testJSONStruct.GenerateJSON()))
+	resp, err := client.Post(addr, "application/json", bodyReader)
+	log.Println(resp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// TEST
+}
+
+func BeginHTTP(certFile string, keyFile string, addr string, knownUuids map[string]string) {
 	mux := http.NewServeMux()
 	mux.Handle("/handshake", http.HandlerFunc(handshake))
 
@@ -49,9 +121,11 @@ func BeginHTTP(certFile string, keyFile string, addr string) {
 
 	tlsConfig := &tls.Config{
 		Certificates: certs,
-		ClientAuth: tls.RequireAndVerifyClientCert, // changeme
+		ClientAuth: tls.RequireAndVerifyClientCert,
 		InsecureSkipVerify: true,
-		//VerifyPeerCertificate: verifyPeer,
+		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			return PCVerifyConnection(rawCerts, knownUuids)
+		},
 	}
 
 	h3Server := &http3.Server{

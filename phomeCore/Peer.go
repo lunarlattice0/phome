@@ -10,12 +10,13 @@ import (
 
 type JSONBundle struct { // JSON Bundles are used for pairing and general purpose.
 	PubKey	string // required only for initial pair, otherwise it is ignored.
+	Test	string
 }
 // Protip: You can modify this to create programs for other uses...
 
 // This function generates the initial pairing JSON from a JSONBundle.
 // It is recommended to convert the string output to base64 for pairing.
-func (newPairingJSON *JSONBundle) GeneratePairingJSON () string {
+func (newPairingJSON *JSONBundle) GenerateJSON () string {
 	jsonStr, err := json.Marshal(newPairingJSON)
 	if err != nil {
 		log.Fatal(err)
@@ -25,7 +26,7 @@ func (newPairingJSON *JSONBundle) GeneratePairingJSON () string {
 }
 
 // This function unmarshals a pairing JSON string into a JSONBundle
-func (newPairingJSON *JSONBundle) DecodePairingJSON (pairingJSONstr string){
+func (newPairingJSON *JSONBundle) DecodeJSON (pairingJSONstr string){
 	err := json.Unmarshal([]byte(pairingJSONstr), &newPairingJSON)
 	if err != nil {
 		log.Fatal(err)

@@ -17,8 +17,9 @@ var selfIDs = pc.SelfIDs{}
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage: phome [client | server | showpair | newpair | regenerate]")
 	fmt.Fprintln(os.Stderr, "       phome [server] [IP:port]")
+	fmt.Fprintln(os.Stderr, "       phome [client] [IP:port]")
 	fmt.Fprintln(os.Stderr, "       phome [newpair] [pairing code of other device]")
-	fmt.Fprintln(os.Stderr, "hint: you can run the client and server in as separate processes simultaneously")
+	fmt.Fprintln(os.Stderr, "hint: you can run the client and server as separate processes simultaneously")
 	os.Exit(1)
 }
 
@@ -67,15 +68,6 @@ func loadPeerUUIDCerts (dirs *Directories) (map[string]string) {
 	return peerMap
 }
 
-func beginListener(dirs *Directories, address string) {
-	ensureCertsExist(dirs)
-
-	cert := selfIDs.CertPath
-	key := selfIDs.KeyPath
-
-	pc.BeginHTTP(cert, key, address)
-}
-
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -98,7 +90,7 @@ func main() {
 		}
 		newPairingJSON := pc.JSONBundle{PubKey: string(pubKeyData)}
 
-		pairingJSONB64 := pc.EncodeB64(newPairingJSON.GeneratePairingJSON())
+		pairingJSONB64 := pc.EncodeB64(newPairingJSON.GenerateJSON())
 		fmt.Println(pairingJSONB64)
 	case "newpair":
 		if len(os.Args) < 3 {
@@ -109,7 +101,7 @@ func main() {
 
 		peerPairingStr := pc.DecodeB64(os.Args[2])
 		newPeerPairing := new(pc.JSONBundle)
-		newPeerPairing.DecodePairingJSON(peerPairingStr)
+		newPeerPairing.DecodeJSON(peerPairingStr)
 
 		// UUID Decoding order
 		// PEM >> PKCS8 (ASN1) >> Certificate.DNSName (uuid)
@@ -181,10 +173,25 @@ func main() {
 		if len(os.Args) < 3 {
 			usage()
 		}
+
+		ensureCertsExist(&dirs)
 		address := string(os.Args[2])
 
 		log.Println("Starting HTTP listener on port " + address)
-		beginListener(&dirs, address)
+
+
+		cert := selfIDs.CertPath
+		key := selfIDs.KeyPath
+
+		pc.BeginHTTP(cert, key, address, loadPeerUUIDCerts(&dirs))
+	case "client":
+		if len(os.Args) < 3 {
+			usage()
+		}
+		ensureCertsExist(&dirs)
+		//resolve peer address
+		addr := string(os.Args[2])
+		pc.BeginClientPeer(selfIDs.CertPath, selfIDs.KeyPath, addr, loadPeerUUIDCerts(&dirs))
 	default:
 		usage()
 	}
