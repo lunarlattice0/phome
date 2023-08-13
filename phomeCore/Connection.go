@@ -64,7 +64,7 @@ func PCVerifyConnection (rawCerts [][]byte, knownCerts map[string]string) (error
 			}
 		}
 	} else {
-		errors.New("The received and stored certificates are of different lengths and do not match.")
+		return errors.New("The received and stored certificates are of different lengths and do not match.")
 	}
 	return nil
 }
@@ -101,7 +101,7 @@ func BeginClientPeer(certFile string, keyFile string, addr string, knownUuids ma
 
 	bodyReader := bytes.NewReader([]byte(testJSONStruct.GenerateJSON()))
 	resp, err := client.Post(addr, "application/json", bodyReader)
-	log.Println(resp)
+	log.Println(resp) // debug
 	if err != nil {
 		log.Fatal(err)
 	}
