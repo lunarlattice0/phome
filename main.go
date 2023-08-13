@@ -44,6 +44,8 @@ func ensureCertsExist(dirs *Directories) {
 	}
 }
 
+// TODO: Move this to phomeCore for gobind/cgo support.
+// Research if cgo/gobind allows callbacks...
 // Loads known Peer UUIDs and certs into a map for the server for fast access.
 func loadPeerUUIDCerts (dirs *Directories) (map[string]string) {
 	peerMap := make(map[string]string)

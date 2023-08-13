@@ -121,7 +121,7 @@ func BeginHTTP(certFile string, keyFile string, addr string, knownUuids map[stri
 
 	tlsConfig := &tls.Config{
 		Certificates: certs,
-		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientAuth: tls.RequireAnyClientCert,
 		InsecureSkipVerify: true,
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			return PCVerifyConnection(rawCerts, knownUuids)
