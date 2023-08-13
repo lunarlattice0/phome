@@ -1,5 +1,4 @@
-// This file handles encryption and decryption of TLS and JWT
-//TODO: PUT UUID AS SERVERNAME OF CERT!!!
+// This file handles encryption and decryption of TLS
 package phomeCore
 
 import (
@@ -19,7 +18,6 @@ import (
 
 // Remember to check that these paths are valid in your implementation!
 type SelfIDs struct {
-	UuidPath string
 	CertPath string
 	KeyPath  string
 }
@@ -34,7 +32,6 @@ func (ids *SelfIDs) GenCerts() {
 	}
 	*/
 
-	uuidFile := ids.UuidPath
 	certPemFile := ids.CertPath
 	keyFile := ids.KeyPath
 	//var uuidFile = filepath.Join(targetDir, "uuid")
@@ -42,11 +39,6 @@ func (ids *SelfIDs) GenCerts() {
 	//var keyFile = filepath.Join(targetDir, "key.pem")
 
 	uuidStr := GenerateUUID()
-	uuidBytes := []byte(uuidStr)
-
-	if err := os.WriteFile(uuidFile, uuidBytes, 0600); err != nil {
-		log.Fatalf("Failed to open uuid file for writing: %v", err)
-	}
 
 	//Modified from https://go.dev/src/crypto/tls/generate_cert.go
 	//Please see SUBLICENSE for licensing of the bottom code.

@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"io/fs"
+	"crypto/x509"
+	"encoding/pem"
 )
 
 var selfIDs = pc.SelfIDs{}
@@ -26,7 +28,6 @@ func ensureCertsExist(dirs *Directories) {
 		log.Fatal(err)
 	}
 
-	selfIDs.UuidPath = filepath.Join(dirs.Certificates, "uuid")
 	selfIDs.CertPath = filepath.Join(dirs.Certificates, "cert.pem")
 	selfIDs.KeyPath = filepath.Join(dirs.Certificates, "key.pem")
 
@@ -37,9 +38,7 @@ func ensureCertsExist(dirs *Directories) {
 	// Private key
 	_, err2 := os.Stat(selfIDs.KeyPath)
 
-	// Own UUID
-	_, err3 := os.Stat(selfIDs.UuidPath)
-	if err != nil || err2 != nil || err3 != nil {
+	if err != nil || err2 != nil {
 		selfIDs.GenCerts()
 	}
 }
@@ -92,30 +91,15 @@ func main() {
 	case "showpair":
 		ensureCertsExist(&dirs)
 
-		pubkeyFile := selfIDs.KeyPath
-		pubKeyData, err := os.ReadFile(pubkeyFile)
+		pubKeyFile := selfIDs.CertPath
+		pubKeyData, err := os.ReadFile(pubKeyFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		uuidFile := selfIDs.UuidPath
-		uuidFileData, err := os.ReadFile(uuidFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		newPairingJSON := pc.JSONBundle{PubKey: string(pubKeyData), UUID: string(uuidFileData)}
-
+		newPairingJSON := pc.JSONBundle{PubKey: string(pubKeyData)}
 
 		pairingJSONB64 := pc.EncodeB64(newPairingJSON.GeneratePairingJSON())
 		fmt.Println(pairingJSONB64)
-	/*
-	//TEST USAGE ONLY
-	case "testSign":
-		ensureCertsExist(&dirs)
-		log.Println(selfIDs.SignString("hi"))
-	//
-	*/
 	case "newpair":
 		if len(os.Args) < 3 {
 			usage()
@@ -123,18 +107,45 @@ func main() {
 
 		ensureCertsExist(&dirs)
 
-		uuidFile := selfIDs.UuidPath
-		uuidFileData, err := os.ReadFile(uuidFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-
 		peerPairingStr := pc.DecodeB64(os.Args[2])
 		newPeerPairing := new(pc.JSONBundle)
 		newPeerPairing.DecodePairingJSON(peerPairingStr)
 
+		// UUID Decoding order
+		// PEM >> PKCS8 (ASN1) >> Certificate.DNSName (uuid)
+
+		// Own uuid
+		selfCertPEM, err := os.ReadFile(selfIDs.CertPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		block, _ := pem.Decode(selfCertPEM)
+		if block == nil {
+			log.Fatal("No public key found in own certificate. Please regenerate!")
+		}
+
+		selfCert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		selfUuid := selfCert.DNSNames[0]
+
+		// peer uuid
+		block, _ = pem.Decode([]byte(newPeerPairing.PubKey))
+		if block == nil {
+			log.Fatal("No public key found in peer's certificate!")
+		}
+
+		peerCert, err := x509.ParseCertificate([]byte(block.Bytes))
+		if err != nil {
+			log.Fatal(err)
+		}
+		peerUuid := peerCert.DNSNames[0]
+
 		//We don't care about matching certs because the probability is so low.
-		if newPeerPairing.UUID == string(uuidFileData) {
+		if peerUuid == string(selfUuid) {
 			fmt.Fprintln(os.Stderr, "phome: peer has same UUID as this computer, please regenerate certificates and UUIDs on either device.")
 			os.Exit(-1)
 		}
@@ -144,8 +155,8 @@ func main() {
 			log.Fatal(err)
 		}
 
-		peerCertDir := filepath.Join(dirs.PairedDevices, newPeerPairing.UUID)
-		peerCertFile := filepath.Join(dirs.PairedDevices, newPeerPairing.UUID, "cert.pem")
+		peerCertDir := filepath.Join(dirs.PairedDevices, peerUuid)
+		peerCertFile := filepath.Join(dirs.PairedDevices, peerUuid, "cert.pem")
 
 		// check if peer directory already exists
 		if _, err = os.Stat(peerCertFile); !os.IsNotExist(err) {
