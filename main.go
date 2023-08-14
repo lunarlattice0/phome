@@ -13,13 +13,14 @@ import (
 )
 
 var selfIDs = pc.SelfIDs{}
+var peerMap = make(map[string]string)
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage: phome [client | server | showpair | newpair | regenerate]")
 	fmt.Fprintln(os.Stderr, "       phome [server] [IP:port]")
 	fmt.Fprintln(os.Stderr, "       phome [client] [IP:port]")
 	fmt.Fprintln(os.Stderr, "       phome [newpair] [pairing code of other device]")
-	fmt.Fprintln(os.Stderr, "       hint: 0.0.0.0 should be used when hosting to other devices. (e.g. 0.0.0.0:60300)")
+	fmt.Fprintln(os.Stderr, "       hint: use 0.0.0.0 to accept all connections. (e.g. 0.0.0.0:60300)")
 	os.Exit(1)
 }
 
@@ -45,21 +46,19 @@ func ensureCertsExist(dirs *Directories) {
 }
 
 // TODO: Move this to phomeCore for gobind/cgo support.
-// Research if cgo/gobind allows callbacks...
-// Loads known Peer UUIDs and certs into a map for the server for fast access.
-func loadPeerUUIDCerts (dirs *Directories) (map[string]string) {
-	peerMap := make(map[string]string)
+// Loads known Peer Uuids and certs into a map for the server for fast access.
+func loadPeerUuidCerts (dirs *Directories) {
 	err := filepath.Walk(dirs.PairedDevices, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		if info.IsDir() == true && info.Name() != "PairedDevices" {
-			peerUUIDFileData, err := os.ReadFile(filepath.Join(path, "cert.pem"))
+			peerUuidFileData, err := os.ReadFile(filepath.Join(path, "cert.pem"))
 			if err != nil {
 				log.Fatal(err)
 			}
-			peerMap[info.Name()] = string(peerUUIDFileData)
+			peerMap[info.Name()] = string(peerUuidFileData)
 		}
 		return nil
 	})
@@ -67,7 +66,11 @@ func loadPeerUUIDCerts (dirs *Directories) (map[string]string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return peerMap
+}
+
+// While this reference client uses go hashmaps to return client certificates, you may use any other method.
+func lookupPeerMap (peerUuid string) (cert string) {
+	return peerMap[peerUuid]
 }
 
 func main() {
@@ -105,7 +108,7 @@ func main() {
 		newPeerPairing := new(pc.JSONBundle)
 		newPeerPairing.DecodeJSON(peerPairingStr)
 
-		// UUID Decoding order
+		// Uuid Decoding order
 		// PEM >> PKCS8 (ASN1) >> Certificate.DNSName (uuid)
 
 		// Own uuid
@@ -140,7 +143,7 @@ func main() {
 
 		//We don't care about matching certs because the probability is so low.
 		if peerUuid == string(selfUuid) {
-			fmt.Fprintln(os.Stderr, "Peer has same UUID as this computer. Please check your entry or regenerate certificates.")
+			fmt.Fprintln(os.Stderr, "Peer has same Uuid as this computer. Please check your entry or regenerate certificates.")
 			os.Exit(-1)
 		}
 
@@ -169,7 +172,7 @@ func main() {
 		}
 
 		fmt.Println("Successfully paired and stored new peer.")
-		//fmt.Println("UUID:" + newPeerPairing.UUID)
+		//fmt.Println("Uuid:" + newPeerPairing.Uuid)
 		//fmt.Println("Cert:\n" + newPeerPairing.PubKey)
 	case "server":
 		if len(os.Args) < 3 {
@@ -177,6 +180,7 @@ func main() {
 		}
 
 		ensureCertsExist(&dirs)
+		loadPeerUuidCerts(&dirs)
 		address := string(os.Args[2])
 
 		log.Println("Starting HTTP listener on port " + address)
@@ -185,16 +189,22 @@ func main() {
 		cert := selfIDs.CertPath
 		key := selfIDs.KeyPath
 
-		pc.BeginHTTP(cert, key, address, loadPeerUUIDCerts(&dirs))
+		pc.BeginHTTP(cert, key, address, lookupPeerMap)
 	case "client":
 		if len(os.Args) < 3 {
 			usage()
 		}
 		ensureCertsExist(&dirs)
+		loadPeerUuidCerts(&dirs)
 		//resolve peer address
 		//NOTE: We use IP:Port format but http.Client takes "https://IP:Port"
 		addr := "https://" + string(os.Args[2])
-		pc.BeginClientPeer(selfIDs.CertPath, selfIDs.KeyPath, addr, loadPeerUUIDCerts(&dirs))
+		pc.BeginClientPeer(
+			selfIDs.CertPath,
+			selfIDs.KeyPath,
+			addr,
+			lookupPeerMap,
+		)
 	default:
 		usage()
 	}

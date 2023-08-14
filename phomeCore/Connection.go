@@ -31,7 +31,7 @@ func handshake(w http.ResponseWriter, r *http.Request) {
 
 // Compare the certificate received from the server with the saved certificate of this UUID.
 // An MITM should not be possible since the server must be hosted with the same cert that signed the JSON.
-func PCVerifyConnection (rawCerts [][]byte, knownCerts map[string]string) (error) {
+func PCVerifyConnection (rawCerts [][]byte, knownCerts func (peerUuid string) (peerCert string)) (error) {
 	pubKeyBlock := &pem.Block {
 		Type: "CERTIFICATE",
 		Bytes: rawCerts[0],
@@ -50,7 +50,7 @@ func PCVerifyConnection (rawCerts [][]byte, knownCerts map[string]string) (error
 	}
 
 	peerUuid := peerCert.DNSNames[0]
-	cachedPeerPEM := knownCerts[peerUuid]
+	cachedPeerPEM := knownCerts(peerUuid)
 
 	// No idea if this is the most efficient way, but this is likely safe.
 
@@ -70,7 +70,7 @@ func PCVerifyConnection (rawCerts [][]byte, knownCerts map[string]string) (error
 	return nil
 }
 
-func BeginClientPeer(certFile string, keyFile string, addr string, knownUuids map[string]string) {
+func BeginClientPeer (certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) {
 	//generate client TLS config
 	var err error
 	certs := make([]tls.Certificate, 1)
@@ -109,7 +109,7 @@ func BeginClientPeer(certFile string, keyFile string, addr string, knownUuids ma
 	// TEST
 }
 
-func BeginHTTP(certFile string, keyFile string, addr string, knownUuids map[string]string) {
+func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handshake))
 
