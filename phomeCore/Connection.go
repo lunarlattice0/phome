@@ -1,9 +1,5 @@
 // This file contains functions responsible for establishing and maintaining network connections.
-/*
-client verifies with tls.config
-client sends package
-server responds with 200OK and response in body.
-*/
+// TODO: Remove references to log
 
 package phomeCore
 
@@ -23,8 +19,6 @@ func handshake(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		log.Println("Received position update request, validating...")
 	default:
-		log.Println("Dropped invalid request")
-		//Silent Drop
 		http.Error(w, "", http.StatusBadRequest)
 	}
 }
@@ -70,13 +64,13 @@ func PCVerifyConnection (rawCerts [][]byte, knownCerts func (peerUuid string) (p
 	return nil
 }
 
-func BeginClientPeer (certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) {
+func BeginClientPeer (certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) (error){
 	//generate client TLS config
 	var err error
 	certs := make([]tls.Certificate, 1)
 	certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Failed to load TLS keypair.")
 	}
 	tlsConfig := &tls.Config{
 		Certificates: certs,
@@ -100,16 +94,22 @@ func BeginClientPeer (certFile string, keyFile string, addr string, knownUuids f
 		Test: "SNEEDFEEDSEED",
 	}
 
-	bodyReader := bytes.NewReader([]byte(testJSONStruct.GenerateJSON()))
+	body, err := testJSONStruct.GenerateJSON()
+	if err != nil {
+		return err
+	}
+
+	bodyReader := bytes.NewReader([]byte(body))
 	resp, err := client.Post(addr, "application/json", bodyReader)
 	log.Println(resp) // debug
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	// TEST
+	return nil
 }
 
-func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) {
+func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) (error){
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handshake))
 
@@ -117,7 +117,7 @@ func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(pee
 	certs := make([]tls.Certificate, 1)
 	certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		log.Fatal(err)
+		return errors.New("Failed to load TLS keypair.")
 	}
 
 	tlsConfig := &tls.Config{
@@ -149,6 +149,7 @@ func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(pee
 
 	}()
 	if err := h3Server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		return err
 	}
+	return nil
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/google/uuid"
-	"log"
 )
 
 type JSONBundle struct { // JSON Bundles are used for pairing and general purpose.
@@ -16,21 +15,22 @@ type JSONBundle struct { // JSON Bundles are used for pairing and general purpos
 
 // This function generates the initial pairing JSON from a JSONBundle.
 // It is recommended to convert the string output to base64 for pairing.
-func (newPairingJSON *JSONBundle) GenerateJSON () string {
+func (newPairingJSON *JSONBundle) GenerateJSON () (string, error) {
 	jsonStr, err := json.Marshal(newPairingJSON)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
-	return string(jsonStr)
+	return string(jsonStr), nil
 }
 
 // This function unmarshals a pairing JSON string into a JSONBundle
-func (newPairingJSON *JSONBundle) DecodeJSON (pairingJSONstr string){
+func (newPairingJSON *JSONBundle) DecodeJSON (pairingJSONstr string) (error){
 	err := json.Unmarshal([]byte(pairingJSONstr), &newPairingJSON)
 	if err != nil {
-		log.Fatal(err)
+		return (err)
 	}
+	return nil
 }
 
 // Note: GenCerts in Encryption.go also generates the localhost UUID.
@@ -43,10 +43,10 @@ func EncodeB64(in string) string { // Output can be used in a external program, 
 	return base64.URLEncoding.EncodeToString([]byte(in))
 }
 
-func DecodeB64(in string) string {
+func DecodeB64(in string) (string, error) {
 	data, err := base64.URLEncoding.DecodeString(in)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	return string(data)
+	return string(data), nil
 }
