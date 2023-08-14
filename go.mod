@@ -3,6 +3,7 @@ module github.com/Thelolguy1/phome
 go 1.20
 
 require (
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.3.0
 	github.com/quic-go/quic-go v0.37.1
 )

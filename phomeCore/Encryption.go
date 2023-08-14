@@ -11,7 +11,6 @@ import (
 	"os"
 )
 
-
 // Remember to check that these paths are valid in your implementation!
 type SelfIDs struct {
 	CertPath string
@@ -19,7 +18,7 @@ type SelfIDs struct {
 }
 
 // GenCerts generates certificates for server TLS and client verification.
-func (ids *SelfIDs) GenCerts() (error) {
+func (ids *SelfIDs) GenCerts() error {
 
 	certPemFile := ids.CertPath
 	keyFile := ids.KeyPath

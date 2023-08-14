@@ -4,14 +4,14 @@
 package phomeCore
 
 import (
+	"bytes"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"github.com/quic-go/quic-go/http3"
 	"log"
 	"net/http"
-	"crypto/tls"
-	"crypto/x509"
-	"errors"
-	"encoding/pem"
-	"bytes"
 )
 
 func handshake(w http.ResponseWriter, r *http.Request) {
@@ -25,9 +25,9 @@ func handshake(w http.ResponseWriter, r *http.Request) {
 
 // Compare the certificate received from the server with the saved certificate of this UUID.
 // An MITM should not be possible since the server must be hosted with the same cert that signed the JSON.
-func PCVerifyConnection (rawCerts [][]byte, knownCerts func (peerUuid string) (peerCert string)) (error) {
-	pubKeyBlock := &pem.Block {
-		Type: "CERTIFICATE",
+func PCVerifyConnection(rawCerts [][]byte, knownCerts func(peerUuid string) (peerCert string)) error {
+	pubKeyBlock := &pem.Block{
+		Type:  "CERTIFICATE",
 		Bytes: rawCerts[0],
 	}
 	pubKeyPEM := string(pem.EncodeToMemory(pubKeyBlock))
@@ -36,7 +36,6 @@ func PCVerifyConnection (rawCerts [][]byte, knownCerts func (peerUuid string) (p
 	if block == nil {
 		return errors.New("The received certificate did not contain a public key.")
 	}
-
 
 	peerCert, err := x509.ParseCertificate([]byte(block.Bytes))
 	if err != nil {
@@ -64,7 +63,7 @@ func PCVerifyConnection (rawCerts [][]byte, knownCerts func (peerUuid string) (p
 	return nil
 }
 
-func BeginClientPeer (certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) (error){
+func BeginClientPeer(certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) error {
 	//generate client TLS config
 	var err error
 	certs := make([]tls.Certificate, 1)
@@ -73,10 +72,10 @@ func BeginClientPeer (certFile string, keyFile string, addr string, knownUuids f
 		return errors.New("Failed to load TLS keypair.")
 	}
 	tlsConfig := &tls.Config{
-		Certificates: certs,
-		ClientAuth: tls.RequireAnyClientCert,
+		Certificates:       certs,
+		ClientAuth:         tls.RequireAnyClientCert,
 		InsecureSkipVerify: true,
-		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) (error) {
+		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			return PCVerifyConnection(rawCerts, knownUuids)
 		},
 	}
@@ -109,7 +108,7 @@ func BeginClientPeer (certFile string, keyFile string, addr string, knownUuids f
 	return nil
 }
 
-func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) (error){
+func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(peerUuid string) string) error {
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handshake))
 
@@ -121,8 +120,8 @@ func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(pee
 	}
 
 	tlsConfig := &tls.Config{
-		Certificates: certs,
-		ClientAuth: tls.RequireAnyClientCert,
+		Certificates:       certs,
+		ClientAuth:         tls.RequireAnyClientCert,
 		InsecureSkipVerify: true,
 		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 			return PCVerifyConnection(rawCerts, knownUuids)
@@ -130,13 +129,13 @@ func BeginHTTP(certFile string, keyFile string, addr string, knownUuids func(pee
 	}
 
 	h3Server := &http3.Server{
-		Addr: addr,
+		Addr:      addr,
 		TLSConfig: tlsConfig,
-		Handler: mux,
+		Handler:   mux,
 	}
 
-	httpServer := &http.Server {
-		Addr: addr,
+	httpServer := &http.Server{
+		Addr:      addr,
 		TLSConfig: h3Server.TLSConfig,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			h3Server.SetQuicHeaders(w.Header())

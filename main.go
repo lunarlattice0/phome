@@ -1,15 +1,16 @@
-//This is a reference CLI wrapper for phomeCore
+// This is a reference CLI wrapper for phomeCore
+// TODO: Set up phomeCore to return errors instead of using log.Fatal.
 package main
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	pc "github.com/Thelolguy1/phome/phomeCore"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
-	"io/fs"
-	"crypto/x509"
-	"encoding/pem"
 )
 
 var selfIDs = pc.SelfIDs{}
@@ -41,13 +42,16 @@ func ensureCertsExist(dirs *Directories) {
 	_, err2 := os.Stat(selfIDs.KeyPath)
 
 	if err != nil || err2 != nil {
-		selfIDs.GenCerts()
+		if err = selfIDs.GenCerts(); err != nil {
+			log.Fatal(err)
+		}
 	}
+
 }
 
 // TODO: Move this to phomeCore for gobind/cgo support.
 // Loads known Peer Uuids and certs into a map for the server for fast access.
-func loadPeerUuidCerts (dirs *Directories) {
+func loadPeerUuidCerts(dirs *Directories) {
 	err := filepath.Walk(dirs.PairedDevices, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			log.Fatal(err)
@@ -69,7 +73,7 @@ func loadPeerUuidCerts (dirs *Directories) {
 }
 
 // While this reference client uses go hashmaps to return client certificates, you may use any other method.
-func lookupPeerMap (peerUuid string) (cert string) {
+func lookupPeerMap(peerUuid string) (cert string) {
 	return peerMap[peerUuid]
 }
 
@@ -95,7 +99,11 @@ func main() {
 		}
 		newPairingJSON := pc.JSONBundle{PubKey: string(pubKeyData)}
 
-		pairingJSONB64 := pc.EncodeB64(newPairingJSON.GenerateJSON())
+		json, err := newPairingJSON.GenerateJSON()
+		if err != nil {
+			log.Fatal(err)
+		}
+		pairingJSONB64 := pc.EncodeB64(json)
 		fmt.Println(pairingJSONB64)
 	case "newpair":
 		if len(os.Args) < 3 {
@@ -104,9 +112,15 @@ func main() {
 
 		ensureCertsExist(&dirs)
 
-		peerPairingStr := pc.DecodeB64(os.Args[2])
+		peerPairingStr, err := pc.DecodeB64(os.Args[2])
+		if err != nil {
+			log.Fatal(err)
+		}
 		newPeerPairing := new(pc.JSONBundle)
-		newPeerPairing.DecodeJSON(peerPairingStr)
+		err = newPeerPairing.DecodeJSON(peerPairingStr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		// Uuid Decoding order
 		// PEM >> PKCS8 (ASN1) >> Certificate.DNSName (uuid)
@@ -185,11 +199,13 @@ func main() {
 
 		log.Println("Starting HTTP listener on port " + address)
 
-
 		cert := selfIDs.CertPath
 		key := selfIDs.KeyPath
 
-		pc.BeginHTTP(cert, key, address, lookupPeerMap)
+		err := pc.BeginHTTP(cert, key, address, lookupPeerMap)
+		if err != nil {
+			log.Fatal(err)
+		}
 	case "client":
 		if len(os.Args) < 3 {
 			usage()
@@ -199,12 +215,9 @@ func main() {
 		//resolve peer address
 		//NOTE: We use IP:Port format but http.Client takes "https://IP:Port"
 		addr := "https://" + string(os.Args[2])
-		pc.BeginClientPeer(
-			selfIDs.CertPath,
-			selfIDs.KeyPath,
-			addr,
-			lookupPeerMap,
-		)
+		if err := pc.BeginClientPeer(selfIDs.CertPath, selfIDs.KeyPath, addr, lookupPeerMap); err != nil {
+			log.Fatal(err)
+		}
 	default:
 		usage()
 	}
