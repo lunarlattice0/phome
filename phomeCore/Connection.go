@@ -19,9 +19,6 @@ import (
 )
 
 func handshake(w http.ResponseWriter, r *http.Request) {
-	//TODO: Verify peer identity on client and server (2 way)
-	// requireanyclientcert
-	// verifyconnection
 	switch r.Method {
 	case http.MethodPost:
 		log.Println("Received position update request, validating...")
@@ -114,7 +111,7 @@ func BeginClientPeer(certFile string, keyFile string, addr string, knownUuids ma
 
 func BeginHTTP(certFile string, keyFile string, addr string, knownUuids map[string]string) {
 	mux := http.NewServeMux()
-	mux.Handle("/handshake", http.HandlerFunc(handshake))
+	mux.Handle("/", http.HandlerFunc(handshake))
 
 	var err error
 	certs := make([]tls.Certificate, 1)

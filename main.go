@@ -19,7 +19,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "       phome [server] [IP:port]")
 	fmt.Fprintln(os.Stderr, "       phome [client] [IP:port]")
 	fmt.Fprintln(os.Stderr, "       phome [newpair] [pairing code of other device]")
-	fmt.Fprintln(os.Stderr, "server hint: 0.0.0.0 should be used when hosting to other devices.")
+	fmt.Fprintln(os.Stderr, "       hint: 0.0.0.0 should be used when hosting to other devices. (e.g. 0.0.0.0:60300)")
 	os.Exit(1)
 }
 
@@ -140,7 +140,7 @@ func main() {
 
 		//We don't care about matching certs because the probability is so low.
 		if peerUuid == string(selfUuid) {
-			fmt.Fprintln(os.Stderr, "phome: peer has same UUID as this computer, please regenerate certificates and UUIDs on either device.")
+			fmt.Fprintln(os.Stderr, "Peer has same UUID as this computer. Please check your entry or regenerate certificates.")
 			os.Exit(-1)
 		}
 
@@ -154,7 +154,7 @@ func main() {
 
 		// check if peer directory already exists
 		if _, err = os.Stat(peerCertFile); !os.IsNotExist(err) {
-			fmt.Fprintln(os.Stderr, "phome: peer already paired!")
+			fmt.Fprintln(os.Stderr, "Peer already paired!")
 			os.Exit(-1)
 		}
 
@@ -192,7 +192,8 @@ func main() {
 		}
 		ensureCertsExist(&dirs)
 		//resolve peer address
-		addr := string(os.Args[2])
+		//NOTE: We use IP:Port format but http.Client takes "https://IP:Port"
+		addr := "https://" + string(os.Args[2])
 		pc.BeginClientPeer(selfIDs.CertPath, selfIDs.KeyPath, addr, loadPeerUUIDCerts(&dirs))
 	default:
 		usage()
