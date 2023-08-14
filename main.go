@@ -19,7 +19,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "       phome [server] [IP:port]")
 	fmt.Fprintln(os.Stderr, "       phome [client] [IP:port]")
 	fmt.Fprintln(os.Stderr, "       phome [newpair] [pairing code of other device]")
-	fmt.Fprintln(os.Stderr, "hint: you can run the client and server as separate processes simultaneously")
+	fmt.Fprintln(os.Stderr, "server hint: 0.0.0.0 should be used when hosting to other devices.")
 	os.Exit(1)
 }
 

@@ -63,6 +63,10 @@ func PCVerifyConnection (rawCerts [][]byte, knownCerts map[string]string) (error
 				return errors.New("The received and stored certificates do not match.")
 			}
 		}
+	} else if len(cachedPeerPEM) == 0 {
+		return errors.New("The certificate received is from an unpaired device and cannot be used.")
+	} else if len(pubKeyPEM) == 0 {
+		return errors.New("The peer sent a blank certificate.")
 	} else {
 		return errors.New("The received and stored certificates are of different lengths and do not match.")
 	}
