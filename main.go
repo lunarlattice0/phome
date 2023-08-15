@@ -82,7 +82,10 @@ func main() {
 		usage()
 	}
 
-	dirs := GetDirectories()
+	dirs, err := GetDirectories()
+	if err != nil {
+		log.Fatal(err)
+	}
 	switch os.Args[1] {
 	case "regenerate":
 		if err := os.RemoveAll(dirs.Certificates); err != nil {

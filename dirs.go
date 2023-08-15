@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -19,10 +18,10 @@ type Directories struct {
 	Data   string
 }
 
-func GetDirectories() Directories {
+func GetDirectories() (Directories, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal("failed to get home directory")
+		return Directories{}, err
 	}
 
 	xdgDirs := map[string]string{
@@ -45,5 +44,5 @@ func GetDirectories() Directories {
 
 	dirs.Certificates = filepath.Join(dirs.Data, "Certificates")
 	dirs.PairedDevices = filepath.Join(dirs.Data, "PairedDevices")
-	return dirs
+	return dirs, nil
 }
