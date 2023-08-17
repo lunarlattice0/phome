@@ -87,6 +87,19 @@ func main() {
 		log.Fatal(err)
 	}
 	switch os.Args[1] {
+	case "dbustest":
+		dbusConn, err := beginDbusConnectionBus()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		createGeoClueClient(dbusConn)
+		lat, long, err := getLocation(dbusConn)
+		log.Println(lat)
+		log.Println(long)
+		if err != nil {
+			log.Println(err)
+		}
 	case "regenerate":
 		if err := os.RemoveAll(dirs.Certificates); err != nil {
 			log.Fatal(err)

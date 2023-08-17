@@ -34,7 +34,7 @@ func deleteGeoClueClient (conn dbus.Conn, destroyClient string) { // This may fa
 	obj.Call("org.freedesktop.GeoClue2.Manager.DeleteClient", 0, destroyClient)
 }
 
-func getLocation (lat string, long string, error) {
+func getLocation (conn dbus.Conn) (lat string, long string, err error) {
 	dbusConnection, err := beginDbusConnectionBus()
 	if err != nil {
 		return "", "", err
@@ -42,10 +42,22 @@ func getLocation (lat string, long string, error) {
 	clientName := createGeoClueClient(dbusConnection)
 	defer deleteGeoClueClient(dbusConnection, clientName)
 
-	client := conn.Object("org.freedesktop.GeoClue2", clientName)
+	client := conn.Object("org.freedesktop.GeoClue2" , dbus.ObjectPath(clientName))
 	// We need to set DesktopId
+	client.Call("org.freedesktop.DBus.Properties.Set", 0, "('org.freedesktop.GeoClue2.Client', 'DesktopId', <'io.github.Thelolguy1.phome'>)")
+	// yuck
+	client.Call("org.freedesktop.GeoClue2.Start", 0, "")
 
+	//get location client
+	var locationObjectPath string
+	client.Call("org.freedesktop.DBus.Properties.Get", 0, "('org.freedesktop.GeoClue2.Client', 'Location'").Store(&locationObjectPath)
 
+	locationObject := conn.Object("org.freedesktop.GeoClue2", dbus.ObjectPath(locationObjectPath))
+
+	locationObject.Call("org.freedesktop.GeoClue2.Location", 0, "Latitude").Store(&lat)
+	locationObject.Call("org.freedesktop.GeoClue2.Location", 0, "Longitude").Store(&long)
+
+	return
 }
 
 
