@@ -24,12 +24,8 @@ func beginDbusConnectionBus() (dbus.Conn, error) {
 
 func createGeoClueClient (conn dbus.Conn) (string) {
 	obj := conn.Object("org.freedesktop.GeoClue2", "/org/freedesktop/GeoClue2/Manager")
-	err := obj.Call("org.freedesktop.GeoClue2.Manager.CreateClient", 0).Err
-	if err != nil {
-		log.Fatal(err)
-	}
 	var s string
-	err = obj.Call("org.freedesktop.GeoClue2.Manager.GetClient", 0).Store(&s)
+	err := obj.Call("org.freedesktop.GeoClue2.Manager.CreateClient", 0).Store(&s)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,9 +46,9 @@ func getLocation () (lat string, long string, err error) {
 	defer deleteGeoClueClient(conn, clientName)
 	client := conn.Object("org.freedesktop.GeoClue2" , dbus.ObjectPath(clientName))
 	// We need to set DesktopId
-	err = client.Call("org.freedesktop.DBus.Properties.Set", 0, "('org.freedesktop.GeoClue2.Client', 'DesktopId', <'io.github.Thelolguy1.phome'>)").Err
+	err = client.Call("org.freedesktop.DBus.Properties.Set", 0, "('DesktopId', <'io.github.Thelolguy1.phome'>)").Err
 	if err != nil {
-		log.Println(err)
+		log.Fatal("SNEED")
 	}
 	// yuck
 	client.Call("org.freedesktop.GeoClue2.Start", 0, "")
