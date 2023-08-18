@@ -88,13 +88,7 @@ func main() {
 	}
 	switch os.Args[1] {
 	case "dbustest":
-		dbusConn, err := beginDbusConnectionBus()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		createGeoClueClient(dbusConn)
-		lat, long, err := getLocation(dbusConn)
+		lat, long, err := getLocation()
 		log.Println(lat)
 		log.Println(long)
 		if err != nil {

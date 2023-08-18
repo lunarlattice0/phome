@@ -4,17 +4,18 @@ package main
 
 import (
 	"github.com/godbus/dbus/v5"
+	"log"
 )
 
 var existingDbusConnection *dbus.Conn
 
 func beginDbusConnectionBus() (dbus.Conn, error) {
 	if existingDbusConnection == nil {
-		conn, err := dbus.ConnectSessionBus()
+		conn, err := dbus.ConnectSystemBus()
 		if err != nil {
 			return dbus.Conn{}, err
 		}
-		defer conn.Close()
+		existingDbusConnection = conn
 		return *conn, nil
 	} else {
 		return *existingDbusConnection, nil
@@ -23,28 +24,36 @@ func beginDbusConnectionBus() (dbus.Conn, error) {
 
 func createGeoClueClient (conn dbus.Conn) (string) {
 	obj := conn.Object("org.freedesktop.GeoClue2", "/org/freedesktop/GeoClue2/Manager")
-	obj.Call("org.freedesktop.GeoClue2.Manager.CreateClient", 0, "")
+	err := obj.Call("org.freedesktop.GeoClue2.Manager.CreateClient", 0).Err
+	if err != nil {
+		log.Fatal(err)
+	}
 	var s string
-	obj.Call("org.freedesktop.GeoClue2.Manager.GetClient", 0, "").Store(&s)
+	err = obj.Call("org.freedesktop.GeoClue2.Manager.GetClient", 0).Store(&s)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return s
 }
 
 func deleteGeoClueClient (conn dbus.Conn, destroyClient string) { // This may fail?
-	obj := conn.Object("org.freedesktop.GeoClue2", "/org/freedesktop/GeoClue2/Manager")
+	obj := conn.Object("org.freedesktop.GeoClue2", dbus.ObjectPath("/org/freedesktop/GeoClue2/Manager"))
 	obj.Call("org.freedesktop.GeoClue2.Manager.DeleteClient", 0, destroyClient)
 }
 
-func getLocation (conn dbus.Conn) (lat string, long string, err error) {
-	dbusConnection, err := beginDbusConnectionBus()
+func getLocation () (lat string, long string, err error) {
+	conn, err := beginDbusConnectionBus()
 	if err != nil {
 		return "", "", err
 	}
-	clientName := createGeoClueClient(dbusConnection)
-	defer deleteGeoClueClient(dbusConnection, clientName)
-
+	clientName := createGeoClueClient(conn)
+	defer deleteGeoClueClient(conn, clientName)
 	client := conn.Object("org.freedesktop.GeoClue2" , dbus.ObjectPath(clientName))
 	// We need to set DesktopId
-	client.Call("org.freedesktop.DBus.Properties.Set", 0, "('org.freedesktop.GeoClue2.Client', 'DesktopId', <'io.github.Thelolguy1.phome'>)")
+	err = client.Call("org.freedesktop.DBus.Properties.Set", 0, "('org.freedesktop.GeoClue2.Client', 'DesktopId', <'io.github.Thelolguy1.phome'>)").Err
+	if err != nil {
+		log.Println(err)
+	}
 	// yuck
 	client.Call("org.freedesktop.GeoClue2.Start", 0, "")
 
