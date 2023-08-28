@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	gc "github.com/maltegrosse/go-geoclue2"
 )
 
 var selfIDs = pc.SelfIDs{}
@@ -87,13 +88,51 @@ func main() {
 		log.Fatal(err)
 	}
 	switch os.Args[1] {
+	// TEST
 	case "dbustest":
-		lat, long, err := getLocation()
+		gcm, err := gc.NewGeoclueManager()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		client, err := gcm.GetClient()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = client.SetDesktopId("firefox")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = client.SetRequestedAccuracyLevel(gc.GClueAccuracyLevelExact)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = client.Start()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		location, err := client.GetLocation()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		lat, err := location.GetLatitude()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		long, err := location.GetLongitude()
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		log.Println(lat)
 		log.Println(long)
-		if err != nil {
-			log.Println(err)
-		}
+	// TEST
 	case "regenerate":
 		if err := os.RemoveAll(dirs.Certificates); err != nil {
 			log.Fatal(err)

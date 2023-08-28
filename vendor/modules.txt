@@ -1,7 +1,7 @@
 # github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572
 ## explicit; go 1.13
 github.com/go-task/slim-sprig
-# github.com/godbus/dbus/v5 v5.1.0
+# github.com/godbus/dbus/v5 v5.0.3
 ## explicit; go 1.12
 github.com/godbus/dbus/v5
 # github.com/golang/mock v1.6.0
@@ -14,6 +14,9 @@ github.com/google/pprof/profile
 # github.com/google/uuid v1.3.0
 ## explicit
 github.com/google/uuid
+# github.com/maltegrosse/go-geoclue2 v0.1.1
+## explicit; go 1.13
+github.com/maltegrosse/go-geoclue2
 # github.com/onsi/ginkgo/v2 v2.9.5
 ## explicit; go 1.18
 github.com/onsi/ginkgo/v2/config
